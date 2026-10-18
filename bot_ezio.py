@@ -6,7 +6,23 @@ from pydantic import BaseModel
 from groq import Groq
 
 app = FastAPI(title="Ezio Montes Bot API")
+from fastapi import Request, Response
 
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "ezio_montes_2026")
+
+@app.get("/webhook")
+async def verify_webhook(request: Request):
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+
+    if mode and token:
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            # Meta exige devolver el challenge exacto en texto plano con estado 200
+            return Response(content=challenge, media_type="text/plain", status_code=200)
+        else:
+            return Response(status_code=403)
+    return Response(status_code=400)
 # Clave de API desde las variables de entorno de la nube
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
