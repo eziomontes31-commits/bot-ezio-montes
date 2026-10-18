@@ -53,8 +53,56 @@ def responder_chat(data: MensajeEntrante):
         )
         
         # Pausa aleatoria para simular el ritmo humano antes de responder
-        time.sleep(random.uniform(2.0, 4.0))
-        
+        import random
+import asyncio
+from datetime import datetime, timedelta
+
+# Diccionario para controlar los 2 mensajes seguidos y la pausa de 1 hora
+user_states = {}
+
+def check_user_rate_limit(user_id: str) -> bool:
+    now = datetime.now()
+    
+    if user_id not in user_states:
+        user_states[user_id] = {
+            "count": 1,
+            "last_msg_time": now,
+            "blocked_until": None
+        }
+        return True
+    
+    state = user_states[user_id]
+    
+    # Si está dentro de la hora de pausa
+    if state["blocked_until"]:
+        if now < state["blocked_until"]:
+            return False  # No responde
+        else:
+            state["blocked_until"] = None
+            state["count"] = 0
+
+    # Si envía mensajes seguidos (menos de 3 minutos de diferencia)
+    time_diff = (now - state["last_msg_time"]).total_seconds()
+    if time_diff < 180:
+        state["count"] += 1
+    else:
+        state["count"] = 1
+
+    state["last_msg_time"] = now
+
+    # A los 2 mensajes seguidos, se bloquea/pausa por 1 hora (3600 segundos)
+    if state["count"] >= 2:
+        state["blocked_until"] = now + timedelta(hours=1)
+        return False
+
+    return True
+
+# Pausa aleatoria entre 20 segundos y 30 minutos (1800 segundos)
+        tiempo_espera = random.randint(20, 1800)
+        await asyncio.sleep(tiempo_espera)
+
+        # Retornar la respuesta generada por Groq
         return {"respuesta": completion.choices[0].message.content}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
